@@ -1,45 +1,78 @@
-Function Stop-AOS
+
+Function Aos-Mgr
 {
  <#
   .Synopsis
-    Converts Bytes into the appropriate unit of measure. 
-   .Description
-    The Get-OptimalSize function converts bytes into the appropriate unit of 
-    measure. It returns a string representation of the number.
-   .Example
-    Get-OptimalSize 1025
-    Converts 1025 bytes to 1.00 KiloBytes
-    .Example
-    Get-OptimalSize -sizeInBytes 10099999 
-    Converts 10099999 bytes to 9.63 MegaBytes
-   .Parameter SizeInBytes
-    The size in bytes to be converted
-   .Inputs
-    [int64]
-   .OutPuts
+    Facilitates the management of multiple AOS services across multiple machines. 
+  
+  .Description
+    Allows the management of a multiple AOS environment.
+  
+  .Example
+    Aos-Mgr -start 
+    Starts AOS60$01 Service on localhost
+  
+  .Example
+    $servers = @(AOSSERVER01, AOSSERVER02, AOSSERVER03)
+    Aos-Mgr -stop -hosts $servers 
+    Starts AOS60$01 Service on AOSSERVER01, AOSSERVER02, AOSSERVER03
+    
+  .Example
+    Aos-Mgr -start -m AOSSERVER01, AOSSERVER02, AOSSERVER03 -s = AXService
+    Starts AXService Service on AOSSERVER01, AOSSERVER02, AOSSERVER03
+  
+  .Parameter start
+    Start Application Object Service(s)
+  .Parameter stop
+    Stop Application Object Service(s)
+  .Parameter hosts
+    Specify hosts service lives on
+  .Parameter serviceName
+    AOS Service Name    
+  
+  .Inputs
     [string]
-   .Notes
-    NAME:  Get-OptimalSize
-    AUTHOR: Ed Wilson
-    LASTEDIT: 1/4/2010
-    KEYWORDS:
-   .Link
-     Http://www.ScriptingGuys.com
+  
+  .Notes 
+      NAME:  AOS-Util
+      AUTHOR: Stone C. Lasley
+      LASTEDIT: 1/4/2010
+      KEYWORDS:
+  
+  .Link
+   Http://www.github.com/stonelasley
+    
  #Requires -Version 2.0
  #>
-    [CmdletBinding()]
-	PARAM (
-    [string[]]$hosts, 
+    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
+    [OutputType([String])]
+	
+    PARAM (
+    [Parameter(ParameterSetName='startAos')]
+    [Alias('u')]
+    [switch]$start,
+    
+    [Parameter(ParameterSetName='stopAos')]
+    [Alias('d')]
+    [switch]$stop,
+    
+    [Parameter(mandatory=$false)]
+    [Alias('h')]
+    [string[]]$hosts = @('localhost'), 
+    
+    [Parameter(mandatory=$false)]
+    [Alias('s')]
     [string]$serviceName = 'AOS60$01'
     )
     
     BEGIN {
+
         $MAosServices = @()
-        #Getting All AOS Services
+
         foreach ($aosSrvr in $hosts) {
-            echo $aosSrvr
             try {
-             $MAosServices += Get-Service $serviceName -ComputerName $aosSrvr
+                Write-Verbose "Getting $($serviceName) service on $($aosSrvr)"
+                $MAosServices += Get-Service $serviceName -ComputerName $aosSrvr
             } catch [Exception] {
                return $_.Exception.Message
             }  	
@@ -49,21 +82,71 @@ Function Stop-AOS
     
     PROCESS {
         foreach ($aosSrvc in $MAosServices) {
-            echo $aosSrvc.Name
-            echo $aosSrvc.MachineName
-        	stopService $aosSrvc
+            if($start.IsPresent) {
+                Resume-Service $aosSrvc
+            } elseif($stop.IsPresent) {
+                Halt-Service $aosSrvc
+            }
         }
+    }
+    
+    END {
+        Write-Host "Complete"
+    }
+}
+
+function Halt-Service {
+    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
+	
+    PARAM (
+    [Parameter(Position=0, ValueFromPipelineByPropertyName=$true, Mandatory=$true)]
+    $service
+    )
+    
+    BEGIN {
+
+    }
+    
+    PROCESS {
+        
+        Write-Verbose "Attempting to Stop $($service.Name) on $($service.MachineName)... be patient this will take several minutes"
+        if ($pscmdlet.ShouldProcess($service.MachineName)) {
+            spsv $aosSrvc.Name
+            $service.WaitForStatus('Stopped')
+        }
+        Write-Verbose "$($aosSrvc.Name): $($aosSrvc.Status)"
     }
     
     END {
     
     }
-} #end Function Stop AOS 
+    
+}
 
-function AxUtilStopService ($service) {
-	#Stopping SSRS Service
-	Write-Host "Stopping $($service.Name) on $($service.MachineName)... be patient this will take several minutes" -foregroundcolor yellow
-	#Stop-Service $service
-	#$service.WaitForStatus('Stopped')
-	Write-Host "$($service.Status)" -foregroundcolor green
+function Resume-Service {
+    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
+	
+    PARAM (
+    [Parameter(Position=0, ValueFromPipelineByPropertyName=$true, Mandatory=$true)]
+    $service
+    )
+    
+    BEGIN {
+
+    }
+    
+    PROCESS {
+        
+        Write-Verbose "Attempting to Start $($service.Name) on $($service.MachineName)... be patient this will take several minutes"
+        if ($pscmdlet.ShouldProcess($service.MachineName)) {
+            sasv $aosSrvc.Name
+            $service.WaitForStatus('Running')
+        }
+        Write-Verbose "$($aosSrvc.Name): $($aosSrvc.Status)"
+    }
+    
+    END {
+    
+    }
+    
 }
