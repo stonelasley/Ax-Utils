@@ -68,20 +68,25 @@ Function Aos-Mgr
     BEGIN {
 
         $MAosServices = @()
-
         foreach ($aosSrvr in $hosts) {
             try {
+                $ErrorActionPreference = "Stop"; #stop on errror
                 Write-Verbose "Getting $($serviceName) service on $($aosSrvr)"
                 $MAosServices += Get-Service $serviceName -ComputerName $aosSrvr
-            } catch [Exception] {
+                
+            } catch {
+               Write-Host "EEYYY"
                return $_.Exception.Message
-            }  	
+            } finally {
+                $ErrorActionPreference = "Continue";
+            }
         }
 
     }
     
     PROCESS {
         foreach ($aosSrvc in $MAosServices) {
+            Write-Host $aosSrvc
             if($start.IsPresent) {
                 Resume-Service $aosSrvc
             } elseif($stop.IsPresent) {
