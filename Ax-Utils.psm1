@@ -1,4 +1,3 @@
-
 Function Aos-Mgr
 {
  <#
@@ -68,25 +67,23 @@ Function Aos-Mgr
     BEGIN {
 
         $MAosServices = @()
-        foreach ($aosSrvr in $hosts) {
-            try {
-                $ErrorActionPreference = "Stop"; #stop on errror
-                Write-Verbose "Getting $($serviceName) service on $($aosSrvr)"
-                $MAosServices += Get-Service $serviceName -ComputerName $aosSrvr
-                
-            } catch {
-               Write-Host "EEYYY"
-               return $_.Exception.Message
-            } finally {
-                $ErrorActionPreference = "Continue";
-            }
+        try {
+            $ErrorActionPreference = "Stop"; #stop on errror
+            Write-Verbose "Getting $($serviceName) service on $($aosSrvr)"
+            $MAosServices += Gather-Services -h $hosts -s $serviceName
+            
+        } catch {
+           Write-Host "EEYYY"
+           return $_.Exception.Message
+        } finally {
+            $ErrorActionPreference = "Continue";
         }
+        
 
     }
     
     PROCESS {
         foreach ($aosSrvc in $MAosServices) {
-            Write-Host $aosSrvc
             if($start.IsPresent) {
                 Resume-Service $aosSrvc
             } elseif($stop.IsPresent) {
@@ -98,60 +95,4 @@ Function Aos-Mgr
     END {
         Write-Host "Complete"
     }
-}
-
-function Halt-Service {
-    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
-	
-    PARAM (
-    [Parameter(Position=0, ValueFromPipelineByPropertyName=$true, Mandatory=$true)]
-    $service
-    )
-    
-    BEGIN {
-
-    }
-    
-    PROCESS {
-        
-        Write-Verbose "Attempting to Stop $($service.Name) on $($service.MachineName)... be patient this will take several minutes"
-        if ($pscmdlet.ShouldProcess($service.MachineName)) {
-            spsv $aosSrvc.Name
-            $service.WaitForStatus('Stopped')
-        }
-        Write-Verbose "$($aosSrvc.Name): $($aosSrvc.Status)"
-    }
-    
-    END {
-    
-    }
-    
-}
-
-function Resume-Service {
-    [CmdletBinding(SupportsShouldProcess=$true, ConfirmImpact='Medium')]
-	
-    PARAM (
-    [Parameter(Position=0, ValueFromPipelineByPropertyName=$true, Mandatory=$true)]
-    $service
-    )
-    
-    BEGIN {
-
-    }
-    
-    PROCESS {
-        
-        Write-Verbose "Attempting to Start $($service.Name) on $($service.MachineName)... be patient this will take several minutes"
-        if ($pscmdlet.ShouldProcess($service.MachineName)) {
-            sasv $aosSrvc.Name
-            $service.WaitForStatus('Running')
-        }
-        Write-Verbose "$($aosSrvc.Name): $($aosSrvc.Status)"
-    }
-    
-    END {
-    
-    }
-    
 }
