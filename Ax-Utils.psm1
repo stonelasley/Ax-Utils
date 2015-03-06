@@ -26,7 +26,7 @@ Function Aos-Mgr
     Stop Application Object Service(s)
   .Parameter hosts
     Specify hosts service lives on
-  .Parameter serviceName
+  .Parameter service
     AOS Service Name    
   
   .Inputs
@@ -54,40 +54,55 @@ Function Aos-Mgr
     [Parameter(ParameterSetName='stopAos')]
     [Alias('d')]
     [switch]$stop,
+	
+	[Parameter(ParameterSetName='qeuryAos')]
+    [Alias('s')]
+    [switch]$status,
     
     [Parameter(mandatory=$false)]
     [Alias('h')]
     [string[]]$hosts = @('localhost'), 
     
     [Parameter(mandatory=$false)]
-    [Alias('s')]
-    [string]$serviceName = 'AOS60$01'
+    [Alias('e')]
+    [string]$service = 'AOS60$01'
     )
     
     BEGIN {
-
-        $MAosServices = @()
+        $serviceList = @()
         try {
-            $ErrorActionPreference = "Stop"; #stop on errror
-            Write-Verbose "Getting $($serviceName) service on $($aosSrvr)"
-            $MAosServices += Gather-Services -h $hosts -s $serviceName
-            
+            $ErrorActionPreference = "Stop";
+            Write-Verbose "Gathering $($service) services on $($hosts)"
+            $serviceList += Gather-Services -h $hosts -s $service
+			Write-Verbose "Gathered $($serviceList.Count) services"
         } catch {
-           Write-Host "EEYYY"
            return $_.Exception.Message
         } finally {
             $ErrorActionPreference = "Continue";
-        }
-        
-
+        }   
     }
     
     PROCESS {
-        foreach ($aosSrvc in $MAosServices) {
+        foreach ($srvc in $serviceList) {
             if($start.IsPresent) {
-                Resume-Service $aosSrvc
+				Write-Verbose "Resuming $($srvc.Name) service on $($srvc.MachineName)"
+                Resume-Service $srvc
+				Write-Verbose "$($srvc.Name) service is now: $($srvc.status)"
             } elseif($stop.IsPresent) {
-                Halt-Service $aosSrvc
+				Write-Verbose "Halting $($srvc.Name) service on $($srvc.MachineName)"
+                Halt-Service $srvc
+				Write-Verbose "$($srvc.Name) service is now: $($srvc.status)"
+            } elseif($status.IsPresent) {
+				$msg = "$($srvc.MachineName) `t $($srvc.Name) `t $($srvc.Status)"
+				switch ($srvc.Status) 
+				{ 
+					"Stopped" 	{Write-Host "$msg" -foregroundcolor Red} 
+					"Started" 	{Write-Host "$msg" -foregroundcolor Green} 
+					"Running" 	{Write-Host "$msg" -foregroundcolor Green} 
+					"Stopping"	{Write-Host "$msg" -foregroundcolor Orange} 
+					"Starting" 	{Write-Host "$msg" -foregroundcolor Blue} 
+					default {Write-Host "$msg"}
+				}
             }
         }
     }

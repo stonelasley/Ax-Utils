@@ -39,15 +39,16 @@ Function Gather-Services
     
  #Requires -Version 2.0
  #>
+	[CmdletBinding(SupportsShouldProcess=$true)]
     PARAM (
-    
+   
     [Parameter(mandatory=$false)]
     [Alias('h')]
     [string[]]$hosts = @('localhost'), 
     
-    [Parameter(mandatory=$false)]
+    [Parameter(mandatory=$true)]
     [Alias('s')]
-    [string]$serviceName = 'AOS60$01'
+    [string]$serviceName
     )
     
     BEGIN {
@@ -58,15 +59,13 @@ Function Gather-Services
         foreach ($host in $hosts) {
             Write-Verbose "Getting $($serviceName) service on $($host)"
             try {
-                $ErrorActionPreference = "Stop"; #stop on errror
+                $ErrorActionPreference = "Stop";
                 $srvcList += Get-Service $serviceName -ComputerName $host
-            } catch [ServiceCommandException] {
+            } catch [Microsoft.PowerShell.Commands.ServiceCommandException] {
                 return $_.Exception.Message
             } finally {
                 $ErrorActionPreference = "Continue";
             }
-            
-
         }
     }
     
@@ -91,7 +90,7 @@ function Halt-Service {
         
         Write-Verbose "Attempting to Stop $($srvc.Name) on $($srvc.MachineName)... be patient this will take several minutes"
         if ($pscmdlet.ShouldProcess($srvc.MachineName)) {
-            spsv $srvc.Name
+            spsv $srvc
             $srvc.WaitForStatus('Stopped')
         }
         Write-Verbose "$($aosSrvc.Name): $($aosSrvc.Status)"
@@ -119,7 +118,7 @@ function Resume-Service {
         
         Write-Verbose "Attempting to Start $($srvc.Name) on $($srvc.MachineName)... be patient this will take several minutes"
         if ($pscmdlet.ShouldProcess($srvc.MachineName)) {
-            sasv $srvc.Name
+            sasv $srvc
             $srvc.WaitForStatus('Running')
         }
         Write-Verbose "$($srvc.Name): $($srvc.Status)"
