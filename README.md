@@ -3,11 +3,11 @@ Microsoft Dynamics AX Utilities
 
  ## Installation
   1. Find your powershell module path
-  ```PowerShell
-  PS C:\> echo $env:PSModulePath
-  C:\Users\slasley\Documents\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules\
-  ```
-  ______________________________________________________________________________________________________________________________________________________
+```PowerShell
+PS C:\> echo $env:PSModulePath
+C:\Users\slasley\Documents\WindowsPowerShell\Modules;C:\Windows\system32\WindowsPowerShell\v1.0\Modules\
+```
+______________________________________________________________________________________________________________________________________________________
   2. Create the first directory (under your user profile) if it doesn't exist
   ```PowerShell
   PS C:\> New-Item "$env:USERPROFILE\Documents\WindowsPowerShell\Modules" -type directory
