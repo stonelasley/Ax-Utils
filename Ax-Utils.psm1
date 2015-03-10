@@ -27,7 +27,9 @@ Function Aos-Mgr
   .Parameter hosts
     Specify hosts service lives on
   .Parameter service
-    AOS Service Name    
+    AOS Service Name   
+  .Parameter threads
+    Specify the maximum number of threads for the runspace pool	
   
   .Inputs
     [string]
@@ -65,7 +67,13 @@ Function Aos-Mgr
     
     [Parameter(mandatory=$false)]
     [Alias('e')]
-    [string]$service = 'AOS60$01'
+    [string]$service = 'AOS60$01',
+	
+	[Parameter(mandatory=$false)]
+    [Alias('t')]
+    [Int]$threads = 1
+	
+	
     )
     
     BEGIN {
@@ -83,6 +91,13 @@ Function Aos-Mgr
     }
     
     PROCESS {
+		$Code = {
+			param($Credentials,$ComputerName)
+			$session = New-PSSession -ComputerName $ComputerName -Credential $Credentials
+			Invoke-Command -Session $session -ScriptBlock {w32tm /resync /nowait /rediscover}
+		}
+	
+	
         foreach ($srvc in $serviceList) {
             if($start.IsPresent) {
 				Write-Verbose "Resuming $($srvc.Name) service on $($srvc.MachineName)"

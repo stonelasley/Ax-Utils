@@ -22,6 +22,10 @@ Function Gather-Services
   
   .Parameter hosts
     Specify hosts service lives on
+	
+  .Parameter threads
+    Specify the maximum number of threads for the runspace pool
+	
   .Parameter serviceName
     Service Name    
   
@@ -31,7 +35,7 @@ Function Gather-Services
   .Notes 
       NAME:  AOS-Util
       AUTHOR: Stone C. Lasley
-      LASTEDIT: 1/4/2010
+      LASTEDIT: 2015/03/05
       KEYWORDS:
   
   .Link
